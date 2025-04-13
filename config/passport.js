@@ -7,20 +7,18 @@ passport.use(new GoogleStrategy({
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   callbackURL: '/auth/google/callback',
 }, async (accessToken, refreshToken, profile, done) => {
-  const existingUser = await User.findOne({ googleId: profile.id });
-  if (existingUser) return done(null, existingUser);
-  const user = await User.create({
-    googleId: profile.id,
-    email: profile.emails[0].value,
-    role: 'employee', // default role
-  });
-  done(null, user);
+  const email = profile.emails[0].value;
+  const user = await User.findOne({ email }); // 🔍 Check only by email
+
+  // Either user exists or not, pass info to callback
+  return done(null, { profile, user });
 }));
 
-passport.serializeUser((user, done) => {
-  done(null, user.id);
+passport.serializeUser((userObj, done) => {
+  done(null, userObj.profile.id);
 });
 
-passport.deserializeUser((id, done) => {
-  User.findById(id).then(user => done(null, user));
+passport.deserializeUser(async (id, done) => {
+  const user = await User.findOne({ googleId: id });
+  done(null, user);
 });
