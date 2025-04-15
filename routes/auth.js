@@ -33,11 +33,38 @@ router.post('/register', async (req, res) => {
       userData.employerName = employerName;
     }
 
-    await User.findOneAndUpdate(
-      { email },
-      { $set: userData },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    const existingUser = await User.findOne({ email });
+
+if (existingUser) {
+  const Request = require('../models/Request');
+
+  // Delete their previous requests
+  await Request.deleteMany({ employeeId: existingUser._id });
+
+  // Reset points and update profile
+  await User.findByIdAndUpdate(existingUser._id, {
+      fullName,
+      password: hashedPassword,
+      role,
+      employerName: role === 'employee' ? employerName : undefined,
+      points: 0
+    });
+
+    return res.status(200).json({ message: 'Existing user replaced and data reset.' });
+  }
+
+  // If new user, create fresh
+  await User.create({
+    fullName,
+    email,
+    password: hashedPassword,
+    role,
+    employerName: role === 'employee' ? employerName : undefined,
+    points: 0
+  });
+
+
+
 
     res.status(201).json({ message: 'User registered or updated successfully' });
   } catch (err) {

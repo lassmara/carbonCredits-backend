@@ -41,6 +41,8 @@ app.use((req, res, next) => {
   }
   next();
 });
+const tripRoutes = require('./routes/Trip');
+app.use('/api/trips', tripRoutes);
 
 // Routes
 app.use('/auth', authRoutes);

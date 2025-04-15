@@ -8,6 +8,15 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['employee', 'employer'], default: 'employee' },
   employerName: String,
   points: { type: Number, default: 0 },
+  homeLocation: {
+    lat: Number,
+    lng: Number
+  },
+  officeLocation: {
+    lat: Number,
+    lng: Number
+  }
+  
 });
 
 module.exports = mongoose.model('User', userSchema);

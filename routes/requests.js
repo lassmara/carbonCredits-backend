@@ -7,9 +7,9 @@ const role = require('../middleware/role');
 
 // 🧑‍💼 Employee submits a request
 router.post('/', auth, role('employee'), async (req, res) => {
-  const { mode } = req.body;
+  const { mode, distance, location } = req.body;
   const pointValues = { car: 10, bus: 20, bike: 30 };
-  const points = pointValues[mode];
+  const points = pointValues[mode] * distance;
 
   if (!points) {
     return res.status(400).json({ message: 'Invalid mode selected' });
@@ -21,17 +21,33 @@ router.post('/', auth, role('employee'), async (req, res) => {
     employerName: user.employerName,
     mode,
     points,
+    distance,
+    location: {
+      type: 'Point',
+      coordinates: [location.longitude, location.latitude] // Store geospatial coordinates
+    }
   });
+  
 
   await newRequest.save();
   res.status(201).json({ message: 'Request submitted successfully' });
 });
 
+
 // ✅ Get employee's own requests
+// routes/requests.js
+
 router.get('/employee', auth, role('employee'), async (req, res) => {
-  const requests = await Request.find({ employeeId: req.user.id });
-  res.json(requests);
+  try {
+    const requests = await Request.find({ employeeId: req.user.id }).sort({ createdAt: -1 });
+    res.json(requests);
+  } catch (err) {
+    console.error('Error fetching employee requests:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
 });
+
+
 
 // ✅ Employer views requests by their employees
 // Employer views pending requests
