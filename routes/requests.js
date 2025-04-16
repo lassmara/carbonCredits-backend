@@ -7,15 +7,27 @@ const role = require('../middleware/role');
 
 // 🧑‍💼 Employee submits a request
 router.post('/', auth, role('employee'), async (req, res) => {
-  const { mode, distance, location } = req.body;
-  const pointValues = { car: 10, bus: 20, bike: 30 };
-  const points = pointValues[mode] * distance;
+  console.log('🔐 Authenticated user:', req.user);
+  console.log('📦 Request body:', req.body);
 
-  if (!points) {
-    return res.status(400).json({ message: 'Invalid mode selected' });
+  const { mode, distance, location } = req.body;
+
+  // Validate presence of required fields
+  if (
+    !mode ||
+    distance === undefined ||
+    !location ||
+    typeof location.latitude !== 'number' ||
+    typeof location.longitude !== 'number'
+  ) {
+    return res.status(400).json({ message: 'Invalid request payload' });
   }
 
+  const pointValues = { car: 10, bus: 20, bike: 30 };
+  const points = (pointValues[mode] || 0) * distance;
+
   const user = await User.findById(req.user.id);
+
   const newRequest = new Request({
     employeeId: user._id,
     employerName: user.employerName,
@@ -24,7 +36,15 @@ router.post('/', auth, role('employee'), async (req, res) => {
     distance,
     location: {
       type: 'Point',
-      coordinates: [location.longitude, location.latitude] // Store geospatial coordinates
+      coordinates: [req.body.endLocation.longitude, req.body.endLocation.latitude], // optional, for map view
+    },
+    startLocation: {
+      type: 'Point',
+      coordinates: [req.body.startLocation.longitude, req.body.startLocation.latitude],
+    },
+    endLocation: {
+      type: 'Point',
+      coordinates: [req.body.endLocation.longitude, req.body.endLocation.latitude],
     }
   });
   
@@ -32,7 +52,6 @@ router.post('/', auth, role('employee'), async (req, res) => {
   await newRequest.save();
   res.status(201).json({ message: 'Request submitted successfully' });
 });
-
 
 // ✅ Get employee's own requests
 // routes/requests.js

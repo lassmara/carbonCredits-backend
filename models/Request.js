@@ -24,13 +24,45 @@ const requestSchema = new mongoose.Schema({
     enum: ['pending', 'approved', 'rejected'],
     default: 'pending'
   },
-  distance: { // new field for the distance traveled
+  distance: {
     type: Number,
     required: true
   },
-  location: { // new field for storing employee's starting/ending location
-    type: { type: String, default: 'Point' },
-    coordinates: { type: [Number], required: true } // [longitude, latitude]
+  // Primary location (optional - use endLocation for consistency)
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      required: true
+    }
+  },
+  // NEW: Start location (geoJSON)
+  startLocation: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number],
+      required: true
+    }
+  },
+  // NEW: End location (geoJSON)
+  endLocation: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number],
+      required: true
+    }
   },
   createdAt: {
     type: Date,
@@ -38,6 +70,9 @@ const requestSchema = new mongoose.Schema({
   }
 });
 
-requestSchema.index({ location: '2dsphere' }); // For geospatial queries
+// Geospatial indexes
+requestSchema.index({ location: '2dsphere' });
+requestSchema.index({ startLocation: '2dsphere' });
+requestSchema.index({ endLocation: '2dsphere' });
 
 module.exports = mongoose.model('Request', requestSchema);

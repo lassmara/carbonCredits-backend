@@ -1,39 +1,33 @@
-// routes/trips.js
+// server/routes/trip.js
 const express = require('express');
 const router = express.Router();
-const Trip = require('./Trip');
-const User = require('../models/User');
-const auth = require('../middleware/auth');
-const role = require('../middleware/role');
+const Trip = require('../models/Trip');
 
-// Employee submits a trip
-router.post('/', auth, role('employee'), async (req, res) => {
-  const { startLocation, endLocation, mode, distance, points } = req.body;
+router.post('/log', async (req, res) => {
+  try {
+    const { userId, start, end, distance, date } = req.body;
 
-  const trip = new Trip({
-    employeeId: req.user.id,
-    startLocation,
-    endLocation,
-    mode,
-    distance,
-    points
-  });
+    const trip = new Trip({ userId, start, end, distance, date });
+    await trip.save();
 
-  await trip.save();
-  res.status(201).json({ message: 'Trip logged successfully' });
+    res.status(201).json({ message: 'Trip logged successfully', trip });
+  } catch (error) {
+    res.status(500).json({ message: 'Error saving trip', error });
+  }
 });
 
-// Employee's trip history
-router.get('/employee', auth, role('employee'), async (req, res) => {
-  const trips = await Trip.find({ employeeId: req.user.id });
-  res.json(trips);
+
+// GET trips by employee ID
+router.get('/employee/:userId', async (req, res) => {
+  try {
+    const trips = await Trip.find({ userId: req.params.userId }).sort({ date: -1 });
+    res.json(trips);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching trips', error: err });
+  }
 });
 
-// Employer views employee trips
-router.get('/employer', auth, role('employer'), async (req, res) => {
-  const employer = await User.findById(req.user.id);
-  const trips = await Trip.find({ employerName: employer.employerName });
-  res.json(trips);
-});
+
+
 
 module.exports = router;
