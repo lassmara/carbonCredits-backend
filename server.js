@@ -49,6 +49,8 @@ app.use('/api/trip', tripRoutes);
 app.use('/auth', authRoutes);
 app.use('/api/points', pointRoutes);
 app.use('/api/requests', requestRoutes);
+const walletRoutes = require('./routes/wallet');
+app.use('/api/wallet', walletRoutes);
 
 // MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
