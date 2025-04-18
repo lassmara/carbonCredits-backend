@@ -35,36 +35,33 @@ router.post('/register', async (req, res) => {
 
     const existingUser = await User.findOne({ email });
 
-if (existingUser) {
-  const Request = require('../models/Request');
+    if (existingUser) {
+      const Request = require('../models/Request');
 
-  // Delete their previous requests
-  await Request.deleteMany({ employeeId: existingUser._id });
+      // Delete their previous requests
+      await Request.deleteMany({ employeeId: existingUser._id });
 
-  // Reset points and update profile
-  await User.findByIdAndUpdate(existingUser._id, {
+      // Reset points and update profile
+      await User.findByIdAndUpdate(existingUser._id, {
+        fullName,
+        password: hashedPassword,
+        role,
+        employerName: role === 'employee' ? employerName : undefined,
+        points: 0
+      });
+
+      return res.status(200).json({ message: 'Existing user replaced and data reset.' });
+    }
+
+    // If new user, create fresh
+    await User.create({
       fullName,
+      email,
       password: hashedPassword,
       role,
       employerName: role === 'employee' ? employerName : undefined,
       points: 0
     });
-
-    return res.status(200).json({ message: 'Existing user replaced and data reset.' });
-  }
-
-  // If new user, create fresh
-  await User.create({
-    fullName,
-    email,
-    password: hashedPassword,
-    role,
-    employerName: role === 'employee' ? employerName : undefined,
-    points: 0
-  });
-
-
-
 
     res.status(201).json({ message: 'User registered or updated successfully' });
   } catch (err) {
@@ -107,9 +104,33 @@ router.get('/me', auth, async (req, res) => {
   res.json(user);
 });
 
+// ✅ Update Authenticated User (Edit Profile)
+router.put('/me', auth, async (req, res) => {
+  try {
+    const { fullName, email, employerName } = req.body;
+
+    const updates = { fullName, email };
+    const currentUser = await User.findById(req.user.id);
+
+    if (currentUser.role === 'employee') {
+      updates.employerName = employerName;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(req.user.id, updates, { new: true }).select('-password');
+    res.json(updatedUser);
+  } catch (err) {
+    console.error('Profile update error:', err);
+    res.status(500).json({ message: 'Failed to update profile' });
+  }
+});
+
+router.post('/logout', (req, res) => {
+  res.clearCookie('token');
+  return res.status(200).json({ message: 'Logged out' });
+});
+
 // ✅ Google OAuth Login
 router.get('/google', (req, res, next) => {
-  // Save the role from query to session for later use
   req.session.role = req.query.role;
   passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
 });
@@ -121,11 +142,9 @@ router.get('/google/callback',
     const { profile, user } = req.user;
 
     if (!user) {
-      // ❌ Email not found, redirect to frontend register page
       return res.redirect(`http://localhost:3000?error=notregistered&email=${profile.emails[0].value}`);
     }
 
-    // ✅ Email found, login the user and set token
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
       expiresIn: '1d',
     });
@@ -136,10 +155,9 @@ router.get('/google/callback',
       secure: false,
     });
 
-    const redirectUrl = `http://localhost:3000/dashboard/${user.role}`;
+    const redirectUrl = `http://localhost:3000/${user.role}/dashboard/`;
     res.redirect(redirectUrl);
   }
 );
-
 
 module.exports = router;
