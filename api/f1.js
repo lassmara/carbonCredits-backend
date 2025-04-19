@@ -6,11 +6,11 @@ const session = require('express-session');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
-require('./config/passport'); // Load Passport Google OAuth strategy
+require('../config/passport'); // Load Passport Google OAuth strategy
 
-const authRoutes = require('./routes/auth');
-const pointRoutes = require('./routes/points');
-const requestRoutes = require('./routes/requests');
+const authRoutes = require('../routes/auth');
+const pointRoutes = require('../routes/points');
+const requestRoutes = require('../routes/requests');
 
 const app = express();
 
@@ -41,7 +41,7 @@ app.use((req, res, next) => {
   }
   next();
 });
-const tripRoutes = require('./routes/trip');
+const tripRoutes = require('../routes/trip');
  // adjust path if needed
 app.use('/api/trip', tripRoutes);
 
@@ -49,7 +49,7 @@ app.use('/api/trip', tripRoutes);
 app.use('/auth', authRoutes);
 app.use('/api/points', pointRoutes);
 app.use('/api/requests', requestRoutes);
-const walletRoutes = require('./routes/wallet');
+const walletRoutes = require('../routes/wallet');
 app.use('/api/wallet', walletRoutes);
 
 // MongoDB connection
